@@ -12,34 +12,39 @@ code {
     monospace;
 }
 
-.container {
+html, .content {
+  background-color: #1d1d1d;
+  color: #ddd;
+}
+
+.navbar {
+  height: 50px !important;
+}
+
+.flexContainer {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  height: calc(100vh - 50px); /* Full height of page - header height */
   background-color: #1d1d1d;
 }
 
 .boardWrapper {
-display: flex;
-flex-direction: column;
-align-items: center;
-background-color: #262626;
-padding: 2rem;
-border-radius: 10px;
-box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #262626;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 .status {
-margin-top: 1rem;
-font-size: 1.5rem;
-color: #ffffff;
+  margin-top: 1rem;
+  font-size: 1.5rem;
+  color: #ffffff;
 }
 
 .chessboard {
-margin-top: 1rem;
-}
-
-.App {
-  text-align: center;
+  margin-top: 1rem;
 }

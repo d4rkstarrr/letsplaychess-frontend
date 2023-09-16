@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import Chessboard from "chessboardjsx";
 import {Chess} from "chess.js";
-import socket from "./socket";
+import CustomLoader from "./CustomLoader";
+import socket from "../config/socket";
+import useTitle from "../hooks/useTitle";
 
 function ChessBoard() {
+  useTitle('Play - LetsPlayChess');
+
   const gameRef = useRef(new Chess());
   const [fen, setFen] = useState("start");
   const [playerColor, setPlayerColor] = useState(null);
@@ -107,7 +111,7 @@ function ChessBoard() {
   };
 
   return (
-    <div className="container">
+    <div className="flexContainer">
     {gameStarted && playerColor ? (
       <div className="boardWrapper">
         <h3 className="status">You are playing as {playerColor === "w" ? "White" : "Black"}</h3>
@@ -123,7 +127,9 @@ function ChessBoard() {
         </div>
       </div>
     ) : (
-      <h3 className="status">Searching for an opponent...</h3>
+      <>
+        <CustomLoader />
+      </>
     )}
   </div>
 );
