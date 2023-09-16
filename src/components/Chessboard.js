@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useParams } from "react-router-dom";
 import Chessboard from "chessboardjsx";
 import {Chess} from "chess.js";
 import CustomLoader from "./CustomLoader";
 import socket from "../config/socket";
 import useTitle from "../hooks/useTitle";
 
-function ChessBoard() {
+const ChessBoard = () => {
   useTitle('Play - LetsPlayChess');
+
+  let { timeFormat } = useParams();
 
   const gameRef = useRef(new Chess());
   const [fen, setFen] = useState("start");
@@ -14,6 +17,8 @@ function ChessBoard() {
   const [gameStarted, setGameStarted] = useState(false);
 
   useEffect(() => {
+
+    console.log("Time format received:: " + timeFormat);
 
     socket.on("connect", () => {
       console.log(`Connected with ID: ${socket.id}`);
@@ -60,6 +65,8 @@ function ChessBoard() {
       socket.off("gameOver");
       socket.off("receiveMove");
     };
+
+    // eslint-disable-next-line
   }, [playerColor]); 
 
 

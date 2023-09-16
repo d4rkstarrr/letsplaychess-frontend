@@ -13,7 +13,7 @@ function App() {
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route path="" element={<Homepage />} />
-        <Route path="play" element={<ChessBoard />} />
+        <Route path="play/:timeFormat" element={<ChessBoard />} />
       </Route>
     </Routes >
   );
