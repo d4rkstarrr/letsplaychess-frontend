@@ -1,47 +1,58 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
-import Chessboard from "chessboardjsx";
-import {Chess} from "chess.js";
-import CustomLoader from "./CustomLoader";
-import socket from "../config/socket";
-import useTitle from "../hooks/useTitle";
+import React, { useState, useEffect, useRef } from "react"
+import { useLocation } from "react-router-dom"
+import Chessboard from "chessboardjsx"
+import {Chess} from "chess.js"
+import CustomLoader from "./CustomLoader"
+import socket from "../config/socket"
+import useTitle from "../hooks/useTitle"
 
 const ChessBoard = () => {
-  useTitle('Play - LetsPlayChess');
+  useTitle('Play - LetsPlayChess')
 
-  let { timeFormat } = useParams();
+  let { state } = useLocation()
 
-  const gameRef = useRef(new Chess());
-  const [fen, setFen] = useState("start");
-  const [playerColor, setPlayerColor] = useState(null);
-  const [gameStarted, setGameStarted] = useState(false);
+  const gameRef = useRef(new Chess())
+  const [fen, setFen] = useState("start")
+  const [playerColor, setPlayerColor] = useState(null)
+  const [requestedGame, setRequestedGame] = useState(false)
+  const [gameStarted, setGameStarted] = useState(false)
 
   useEffect(() => {
 
-    console.log("Time format received:: " + timeFormat);
+    if(!requestedGame){
+      socket.emit("findGame", { timeFormat: state.timeFormat })
+      console.log("Searching for a room with time format: " + state.timeFormat)
+      setRequestedGame(true)
+    }
 
     socket.on("connect", () => {
-      console.log(`Connected with ID: ${socket.id}`);
-    });
+      console.log(`Connected with ID: ${socket.id}`)
+    })
   
-    socket.on("joinedRoom", ({ room, players }) => {
-      console.log(`Joined room ${room} with players ${players.join(", ")}`);
-      setPlayerColor(players.indexOf(socket.id) === 0 ? "w" : "b");
-    });
+    socket.on("joinedGame", ({ room, players }) => {
+      console.log(`Joined room ${room} with players ${players.join(", ")}`)
+      setPlayerColor(players.indexOf(socket.id) === 0 ? "w" : "b")
+    })
 
-    socket.on("start", () => {
-      console.log("Start received in client");
-      setFen("start");
-      setGameStarted(true);
-    });
+    socket.on("startGame", () => {
+      console.log("Game has started for the client.")
+      setFen("start")
+      setGameStarted(true)
+    })
 
     socket.on("gameOver", ({ result, winner }) => {
       if (result === "checkmate") {
-        alert(`Checkmate! ${winner} wins.`);
-      } else if (result === "stalemate") {
-        alert("Stalemate! The game is a draw.");
+        alert(`Checkmate! ${winner} wins.`)
+      }else if (result === "stalemate") {
+        alert("Stalemate! The game is a draw.")
+      }else if (result === "threefoldrepetition") {
+        alert(`The game is a draw due to threefold repetition.`)
+      }else if (result === "insufficientmaterial") {
+        alert(`The game is a draw due to insufficient material.`)
+      }else if (result === "50moverule") {
+        alert(`The game is a draw due to 50 move rule.`)
       }
-    });
+    })
 
     socket.on("receiveMove", ({ sourceSquare, targetSquare }) => {
       const newGame = new Chess(gameRef.current.fen());
@@ -50,42 +61,44 @@ const ChessBoard = () => {
         from: sourceSquare,
         to: targetSquare,
         promotion: "q",
-      });
+      })
 
       if (move !== null) {
-        gameRef.current = newGame;
-        setFen(newGame.fen());
+        gameRef.current = newGame
+        setFen(newGame.fen())
       }
-    });
+    })
+
+    //TODO - Opponent disconnected logic for client.
+    socket.on("opponentDisconnected", () => {
+      alert("Opponent has disconnected. Please search for a new game.")
+    })
 
     return () => {
-      socket.off("connect");
-      socket.off("joinedRoom");
-      socket.off("start");
-      socket.off("gameOver");
-      socket.off("receiveMove");
-    };
+      socket.off("connect")
+      socket.off("joinedGame")
+      socket.off("startGame")
+      socket.off("gameOver")
+      socket.off("receiveMove")
+      socket.off("opponentDisconnected")
+    }
 
     // eslint-disable-next-line
-  }, [playerColor]); 
+  }, [playerColor])
 
 
   const handleMove = ({ sourceSquare, targetSquare }) => {
-    console.log("handleMove function has been called.");
     // Don't allow making a move if it's not the player's turn
-    if (gameRef.current.turn() !== playerColor[0]) {
-      return;
+    if (gameRef.current.turn() !== playerColor) {
+      return
     }
   
-    // Get legal moves for the source square
-    const legalMoves = gameRef.current.moves({ square: sourceSquare, verbose: true });
-  
-    // Check if the target square is a legal move
-    const isLegalMove = legalMoves.some(move => move.to === targetSquare);
+    // Get legal moves for the source square and check if the move made it a legal move or not
+    const legalMoves = gameRef.current.moves({ square: sourceSquare, verbose: true })
+    const isLegalMove = legalMoves.some(move => move.to === targetSquare)
   
     if (!isLegalMove) {
-      // alert("Illegal move! Please make a different move.");
-      return;
+      return
     }
   
     // If the move is legal, make the move and update the game state
@@ -94,26 +107,26 @@ const ChessBoard = () => {
       from: sourceSquare,
       to: targetSquare,
       promotion: "q",
-    });
+    })
   
     setFen(gameRef.current.fen());
-    socket.emit("sendMove", { sourceSquare, targetSquare });
+    socket.emit("sendMove", { sourceSquare, targetSquare })
 
     if (gameRef.current.isCheckmate()) {
-      socket.emit("gameOver", { result: "checkmate", winner: playerColor });
-      alert(`Checkmate! ${playerColor} wins.`);
+      socket.emit("gameOver", { result: "checkmate", winner: playerColor })
+      alert(`Checkmate! ${playerColor} wins.`)
     } else if (gameRef.current.isStalemate()) {
-      socket.emit("gameOver", { result: "stalemate" });
-      alert(`Stalemate! The game is a draw.`);
+      socket.emit("gameOver", { result: "stalemate" })
+      alert(`Stalemate! The game is a draw.`)
     } else if (gameRef.current.isThreefoldRepetition()) {
-      socket.emit("gameOver", { result: "stalemate" });
-      alert(`The game is a draw due to threefold repetition.`);
+      socket.emit("gameOver", { result: "threefoldrepetition" })
+      alert(`The game is a draw due to threefold repetition.`)
     } else if (gameRef.current.isInsufficientMaterial()) {
-      socket.emit("gameOver", { result: "stalemate" });
-      alert(`The game is a draw due to insufficient material.`);
+      socket.emit("gameOver", { result: "insufficientmaterial" })
+      alert(`The game is a draw due to insufficient material.`)
     } else if (gameRef.current.isDraw()) {
-      socket.emit("gameOver", { result: "stalemate" });
-      alert(`The game is a draw due to 50 move rule.`);
+      socket.emit("gameOver", { result: "50moverule" })
+      alert(`The game is a draw due to 50 move rule.`)
     }
   };
 
@@ -142,4 +155,4 @@ const ChessBoard = () => {
 );
 }
 
-export default ChessBoard;
+export default ChessBoard
