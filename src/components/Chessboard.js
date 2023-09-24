@@ -6,6 +6,7 @@ import CustomLoader from "./CustomLoader"
 import socket from "../config/socket"
 import useSound from 'use-sound'
 import useTitle from "../hooks/useTitle"
+import { useAlert } from 'react-alert'
 import captureSound from "../audio/capture.mp3"
 // import castleSound from "../audio/castle.mp3"
 import gameEndSound from "../audio/game-end.mp3"
@@ -20,6 +21,7 @@ const ChessBoard = () => {
 
   let { state } = useLocation()
 
+  const alert = useAlert()
   const gameRef = useRef(new Chess())
   const [fen, setFen] = useState("start")
   const [playerColor, setPlayerColor] = useState(null)
@@ -40,11 +42,13 @@ const ChessBoard = () => {
     if(!requestedGame){
       socket.emit("findGame", { timeFormat: state.timeFormat })
       console.log("Searching for a room with time format: " + state.timeFormat)
+      alert.info('Searching for a game!')
       setRequestedGame(true)
     }
 
     socket.on("connect", () => {
       console.log(`Connected with ID: ${socket.id}`)
+      alert.success('Game has started!')
     })
   
     socket.on("joinedGame", ({ room, players }) => {
@@ -62,15 +66,15 @@ const ChessBoard = () => {
     socket.on("gameOver", ({ result, winner }) => {
       playGameEndSound()
       if (result === "checkmate") {
-        alert(`Checkmate! ${winner} wins.`)
+        alert.info(`Checkmate! ${winner} wins.`)
       }else if (result === "stalemate") {
-        alert("Stalemate! The game is a draw.")
+        alert.info("Stalemate! The game is a draw.")
       }else if (result === "threefoldrepetition") {
-        alert(`The game is a draw due to threefold repetition.`)
+        alert.info(`The game is a draw due to threefold repetition.`)
       }else if (result === "insufficientmaterial") {
-        alert(`The game is a draw due to insufficient material.`)
+        alert.info(`The game is a draw due to insufficient material.`)
       }else if (result === "50moverule") {
-        alert(`The game is a draw due to 50 move rule.`)
+        alert.info(`The game is a draw due to 50 move rule.`)
       }
     })
 
@@ -97,7 +101,7 @@ const ChessBoard = () => {
     //TODO - Opponent disconnected logic for client.
     socket.on("opponentDisconnected", () => {
       playGameEndSound()
-      alert("Opponent has disconnected. Please search for a new game.")
+      alert.warn("Opponent has disconnected. Please search for a new game.")
     })
 
     return () => {
@@ -162,23 +166,23 @@ const ChessBoard = () => {
     if(gameRef.current.isCheckmate()) {
       playGameEndSound()
       socket.emit("gameOver", { result: "checkmate", winner: playerColor })
-      alert(`Checkmate! ${playerColor} wins.`)
+      alert.info(`Checkmate! ${playerColor} wins.`)
     }else if (gameRef.current.isStalemate()) {
       playGameEndSound()
       socket.emit("gameOver", { result: "stalemate" })
-      alert(`Stalemate! The game is a draw.`)
+      alert.info(`Stalemate! The game is a draw.`)
     }else if (gameRef.current.isThreefoldRepetition()) {
       playGameEndSound()
       socket.emit("gameOver", { result: "threefoldrepetition" })
-      alert(`The game is a draw due to threefold repetition.`)
+      alert.info(`The game is a draw due to threefold repetition.`)
     }else if (gameRef.current.isInsufficientMaterial()) {
       playGameEndSound()
       socket.emit("gameOver", { result: "insufficientmaterial" })
-      alert(`The game is a draw due to insufficient material.`)
+      alert.info(`The game is a draw due to insufficient material.`)
     }else if (gameRef.current.isDraw()) {
       playGameEndSound()
       socket.emit("gameOver", { result: "50moverule" })
-      alert(`The game is a draw due to 50 move rule.`)
+      alert.info(`The game is a draw due to 50 move rule.`)
     }else if(gameRef.current.inCheck()){
       playCheckSound()
     }
