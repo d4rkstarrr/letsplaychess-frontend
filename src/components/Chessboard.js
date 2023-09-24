@@ -25,6 +25,7 @@ const ChessBoard = () => {
   const [playerColor, setPlayerColor] = useState(null)
   const [requestedGame, setRequestedGame] = useState(false)
   const [gameStarted, setGameStarted] = useState(false)
+  const [chessboardWidth, setChessboardWidth] = useState(560)
 
   const [playCaptureSound] = useSound(captureSound)
   const [playGameEndSound] = useSound(gameEndSound)
@@ -112,6 +113,19 @@ const ChessBoard = () => {
   }, [playerColor])
 
 
+  const handleChessboardWidth = ({ screenWidth, screenHeight }) => {
+    if(!screenWidth || !screenHeight) return
+    
+    screenHeight -= 50 // Removing 50px for the header
+
+    //80% of screen width
+    screenHeight *= 0.8
+    screenWidth *= 0.8
+
+    const responsiveWidth = Math.min(screenWidth, screenHeight)
+    setChessboardWidth(responsiveWidth)
+  }
+
   const handleMove = ({ sourceSquare, targetSquare }) => {
     // Don't allow making a move if it's not the player's turn
     if (gameRef.current.turn() !== playerColor) {
@@ -174,7 +188,7 @@ const ChessBoard = () => {
     <div className="flexContainer">
     {gameStarted && playerColor ? (
       <div className="boardWrapper">
-        <h3 className="status">You are playing as {playerColor === "w" ? "White" : "Black"}</h3>
+        {/* <h3>You are playing as {playerColor === "w" ? "White" : "Black"}</h3> */}
         <div className="chessboard">
           <Chessboard
             position={fen}
@@ -183,6 +197,10 @@ const ChessBoard = () => {
             }
             orientation={playerColor === "w" ? "white" : "black"}
             draggable={!gameRef.current.game_over}
+            width={chessboardWidth}
+            calcWidth={({ screenWidth, screenHeight }) =>
+              handleChessboardWidth({ screenWidth, screenHeight })
+            }
           />
         </div>
       </div>
